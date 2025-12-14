@@ -23,39 +23,38 @@
 
 set -euo pipefail
 
-# Build all example subprojects by executing their local build.sh, if present.
-# Usage: ./build_example.sh
+# Simple build helper for the example kprobe.
+# Requires: clang, bpftool. Optional: pkg-config + libbpf-dev to build user loader.
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EXAMPLES_DIR="$SCRIPT_DIR/S1-basic/examples"
+SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
+OUT_DIR="$SRC_DIR/build"
+BPF_C="$SRC_DIR/example_kprobe.bpf.c"
+BPF_OBJ="$OUT_DIR/example_kprobe.bpf.o"
+BPF_SKEL="$OUT_DIR/example_kprobe.skel.h"
+USER_C="$SRC_DIR/example_kprobe_user.c"
+USER_BIN="$OUT_DIR/example_kprobe_user"
 
-if [[ ! -d "$EXAMPLES_DIR" ]]; then
-  echo "[build_example] examples directory not found: $EXAMPLES_DIR" >&2
-  exit 1
-fi
+mkdir -p "$OUT_DIR"
 
-status=0
-failed_builds=()
-while IFS= read -r build_script; do
-  echo "[build_example] Running $build_script"
-  if ! (cd "$(dirname "$build_script")" && chmod +x "$(basename "$build_script")" && ./"$(basename "$build_script")"); then
-    echo "[build_example] ❌ FAILED: $build_script" >&2
-    failed_builds+=("$build_script")
-    status=1
+clang -target bpf -D__TARGET_ARCH_x86 -O2 -g \
+  -I"$SRC_DIR/../../../../common/include" \
+  -isystem /usr/include/x86_64-linux-gnu \
+  -c "$BPF_C" -o "$BPF_OBJ"
+
+# Generate skeleton header for a user-space loader (optional use).
+bpftool gen skeleton "$BPF_OBJ" > "$BPF_SKEL"
+
+echo "Built BPF object: $BPF_OBJ"
+echo "Generated skeleton: $BPF_SKEL"
+
+if [ -f "$USER_C" ]; then
+  if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libbpf; then
+    cc -O2 -g -Wall -Wextra -I"$OUT_DIR" \
+      $(pkg-config --cflags libbpf) \
+      "$USER_C" -o "$USER_BIN" \
+      $(pkg-config --libs libbpf) -lelf -lz
+    echo "Built user-space loader: $USER_BIN"
   else
-    echo "[build_example] ✅ SUCCESS: $build_script"
+    echo "Skipping user-space loader build (libbpf via pkg-config not found)" >&2
   fi
-done < <(find "$EXAMPLES_DIR" -type f -name build.sh | sort)
-
-if [[ $status -eq 0 ]]; then
-  echo "[build_example] ✅ All builds completed successfully."
-else
-  echo "" >&2
-  echo "[build_example] ❌ Some builds failed:" >&2
-  for failed in "${failed_builds[@]}"; do
-    echo "  - $failed" >&2
-  done
-  echo "[build_example] Total: ${#failed_builds[@]} failed out of $(find "$EXAMPLES_DIR" -type f -name build.sh | wc -l) builds" >&2
 fi
-
-exit $status

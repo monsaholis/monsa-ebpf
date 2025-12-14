@@ -27,7 +27,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EXAMPLES_DIR="$SCRIPT_DIR/examples"
+EXAMPLES_DIR="$SCRIPT_DIR/S1-basic/examples"
 TIMEOUT_BIN="${TIMEOUT_BIN:-timeout}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-2}"
 SUDO="${SUDO:-sudo}"
