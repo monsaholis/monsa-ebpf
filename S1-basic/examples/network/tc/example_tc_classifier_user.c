@@ -78,6 +78,7 @@ static int attach_tc(struct bpf_program *prog, int ifindex)
 
 static void detach_tc(struct bpf_program *prog, int ifindex)
 {
+    (void)prog;
     struct bpf_tc_hook hook = {
         .sz = sizeof(hook),
         .ifindex = ifindex,

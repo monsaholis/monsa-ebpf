@@ -62,9 +62,12 @@ static void print_stats(struct bpf_map *map)
     printf("PID -> calls avg_ms last_rc\n");
     while (bpf_map_get_next_key(fd, &key, &next_key) == 0) {
         if (bpf_map_lookup_elem(fd, &next_key, &stat) == 0) {
-            double avg_ms = stat.calls ? ((double)stat.total_ns / (double)stat.calls) / 1e6 : 0.0;
-            printf("  pid=%u calls=%" PRIu64 " avg_ms=%.3f last_rc=%" PRId64 "\n",
-                   next_key, stat.calls, avg_ms, stat.last_rc);
+                 double avg_ms = stat.calls ? ((double)stat.total_ns / (double)stat.calls) / 1e6 : 0.0;
+                 printf("  pid=%u calls=%llu avg_ms=%.3f last_rc=%lld\n",
+                     next_key,
+                     (unsigned long long)stat.calls,
+                     avg_ms,
+                     (long long)stat.last_rc);
         }
         key = next_key;
     }

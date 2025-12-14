@@ -1,0 +1,15 @@
+# Build outputs
+**/build/
+*.o
+*.skel.h
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

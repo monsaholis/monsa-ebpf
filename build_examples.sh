@@ -27,16 +27,30 @@ set -euo pipefail
 # Usage: ./build_example.sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EXAMPLES_DIR="$SCRIPT_DIR/S1-basic/examples"
+EXAMPLES_DIRS=(
+  "$SCRIPT_DIR/S1-basic/examples"
+  "$SCRIPT_DIR/S2-advanced/examples"
+)
 
-if [[ ! -d "$EXAMPLES_DIR" ]]; then
-  echo "[build_example] examples directory not found: $EXAMPLES_DIR" >&2
+build_scripts=()
+for dir in "${EXAMPLES_DIRS[@]}"; do
+  if [[ -d "$dir" ]]; then
+    while IFS= read -r build_script; do
+      build_scripts+=("$build_script")
+    done < <(find "$dir" -type f -name build.sh | sort)
+  else
+    echo "[build_example] Skip missing examples directory: $dir"
+  fi
+done
+
+if [[ ${#build_scripts[@]} -eq 0 ]]; then
+  echo "[build_example] No examples directories found." >&2
   exit 1
 fi
 
 status=0
 failed_builds=()
-while IFS= read -r build_script; do
+for build_script in "${build_scripts[@]}"; do
   echo "[build_example] Running $build_script"
   if ! (cd "$(dirname "$build_script")" && chmod +x "$(basename "$build_script")" && ./"$(basename "$build_script")"); then
     echo "[build_example] ❌ FAILED: $build_script" >&2
@@ -45,7 +59,7 @@ while IFS= read -r build_script; do
   else
     echo "[build_example] ✅ SUCCESS: $build_script"
   fi
-done < <(find "$EXAMPLES_DIR" -type f -name build.sh | sort)
+done
 
 if [[ $status -eq 0 ]]; then
   echo "[build_example] ✅ All builds completed successfully."
@@ -55,7 +69,7 @@ else
   for failed in "${failed_builds[@]}"; do
     echo "  - $failed" >&2
   done
-  echo "[build_example] Total: ${#failed_builds[@]} failed out of $(find "$EXAMPLES_DIR" -type f -name build.sh | wc -l) builds" >&2
+  echo "[build_example] Total: ${#failed_builds[@]} failed out of ${#build_scripts[@]} builds" >&2
 fi
 
 exit $status

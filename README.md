@@ -2,7 +2,7 @@
 
 Beginner-friendly eBPF examples with maps, organized by program type.
 
-Version: v0.1.0 (2025-12-13)
+Version: v0.1.1 (2025-12-14)
 
 ## Changelog
 - v0.1.0 (2025-12-13): Initial README structure, example lineup, execution flow, and permission checks.
@@ -22,47 +22,106 @@ monsa-ebpf/
 │   └── maps/                # Reusable map definition samples
 ├── S1-basic/
 │   └── examples/
-│       ├── tracing/
-│       │   ├── kprobe/          # Function entry
-│       │   ├── kretprobe/       # Function return
-│       │   ├── tracepoint/      # Stable tracepoint
-│       │   ├── raw_tracepoint/  # High-performance raw tracepoint
-│       │   └── fentry_fexit/    # Modern fentry/fexit
-│       ├── userspace/
-│       │   ├── uprobe/          # ELF symbol entry
-│       │   └── uretprobe/       # Return probe
-│       ├── network/
-│       │   ├── xdp/             # NIC ingress fast path
-│       │   ├── tc/              # TC classifier/action
-│       │   ├── socket_filter/   # Socket filter
-│       │   └── sk_lookup/       # Socket lookup
-│       ├── security/
-│       │   └── lsm/             # LSM hook example
-│       ├── perf/
-│       │   └── perf_event/      # Performance counters/profiling
-│       ├── cgroup/
-│       │   ├── cgroup_skb/      # Ingress/egress filtering
-│       │   ├── cgroup_sock/     # Socket create
-│       │   ├── cgroup_sock_addr/# Bind/connect/sendmsg
-│       │   ├── cgroup_sockopt/  # Getsockopt/setsockopt tracing
-│       │   ├── cgroup_device/   # Device access control
-│       │   ├── cgroup_sysctl/   # Sysctl access control
-│       │   └── cgroup_bpf/      # BPF LSM: bpf syscall audit/block
-│       └── advanced/
-│           ├── iterators/       # iter/task, iter/bpf_map
-│           ├── struct_ops/      # TCP CC and other struct_ops
-│           ├── freplace/        # BPF_PROG_TYPE_EXT function replacement
-│           └── flow_dissector/  # Packet parser customization
-└── tools/
-    ├── bpftool/             # bpftool binary or build scripts
-    ├── build/               # Common build scripts (Makefile, CMake)
-    └── run/                 # Loader samples (Go/Rust/C), attach scripts
+│       ├── tracing/             # kernel-side tracing hooks
+│       │   ├── kprobe/          # probe kernel function entry
+│       │   ├── kretprobe/       # probe kernel function return
+│       │   ├── tracepoint/      # use stable tracepoints
+│       │   ├── raw_tracepoint/  # raw tracepoint arguments
+│       │   └── fentry_fexit/    # fentry/fexit for low overhead
+│       ├── userspace/           # user-space probes
+│       │   ├── uprobe/          # function entry in binaries
+│       │   └── uretprobe/       # function return in binaries
+│       ├── network/             # packet/datapath examples
+│       │   ├── sk_lookup/       # socket lookup redirection
+│       │   ├── socket_filter/   # classic socket filter
+│       │   ├── tc/              # TC ingress classifier
+│       │   └── xdp/             # XDP pass/drop
+│       ├── security/            # LSM hooks
+│       │   └── lsm/             # file open policy
+│       ├── perf/                # perf event integrations
+│       │   └── perf_event/      # CPU cycles sampling
+│       └── cgroup/              # cgroup v2 helpers
+│           ├── cgroup_bpf/      # base attach + counters
+│           ├── cgroup_device/   # device access control
+│           ├── cgroup_skb/      # skb path enforcement
+│           ├── cgroup_sock/     # socket-level filters
+│           ├── cgroup_sock_addr/# address bind/connect policy
+│           ├── cgroup_sockopt/  # setsockopt inspection
+│           └── cgroup_sysctl/   # sysctl access control
+├── S2-advanced/
+│   └── examples/                # Advanced examples with comprehensive data collection
+│       ├── tracing/             # Full-context kernel tracing
+│       │   ├── kprobe/          # Complete task metadata, args, per-PID counters
+│       │   ├── kretprobe/       # Return values, latency, success/error stats
+│       │   ├── tracepoint/      # Event stream + frequency analysis
+│       │   ├── raw_tracepoint/  # Raw kernel args with custom parsing
+│       │   └── fentry_fexit/    # BTF-typed args, latency profiling
+│       ├── userspace/           # Application-level instrumentation
+│       │   ├── uprobe/          # Function args, per-binary call patterns
+│       │   └── uretprobe/       # Latency histograms, error rate tracking
+│       ├── network/             # Deep packet inspection
+│       │   ├── sk_lookup/       # 5-tuple tracking, connection matrix
+│       │   ├── socket_filter/   # L2-L4 headers, protocol distribution
+│       │   ├── tc/              # QoS metrics, drop reasons
+│       │   └── xdp/             # DDoS detection, per-CPU packet rates
+│       ├── security/            # Security audit trails
+│       │   └── lsm/             # File ops, security context, policy violations
+│       ├── perf/                # Performance profiling
+│       │   └── perf_event/      # Hardware counters, stack traces, hot paths
+│       └── cgroup/              # Per-container/service metrics
+│           ├── cgroup_bpf/      # Program attach tracking
+│           ├── cgroup_device/   # Device access patterns
+│           ├── cgroup_skb/      # Per-cgroup traffic stats
+│           ├── cgroup_sock/     # Socket creation patterns
+│           ├── cgroup_sock_addr/# Connect/bind monitoring
+│           ├── cgroup_sockopt/  # Socket option tracking
+│           └── cgroup_sysctl/   # Kernel parameter changes
+```
 ```
 
 ## Recommended Learning Path
-1. `docs/quickstart.md`: Install clang/bpftool → build "hello_bpf" → load → read maps.
-2. `docs/concepts.md`: Program types, attach points, map types (hash/array/lru/percpu/ringbuf/cgroup/stack/queue), user/kernel cooperation patterns.
-3. Per-example README: Execution commands, dependencies, minimum kernel version.
+1. **S1-basic**: Start with simple examples demonstrating core eBPF concepts
+   - `docs/quickstart.md`: Install tools → build → load → verify
+   - `docs/concepts.md`: Program types, maps, attach points
+   - Per-example README: Execution, dependencies, kernel requirements
+   
+2. **S2-advanced**: Progress to comprehensive data collection
+   - Extended context: timestamps, security info, performance metrics
+   - Dual output: user-space (ringbuf) + kernel (bpf_printk)
+   - Production-ready patterns: error handling, statistics, profiling
+
+## S2-Advanced Features
+
+S2-advanced examples demonstrate **comprehensive data collection** for production observability:
+
+### Data Collection Enhancements
+- **Complete metadata**: PID/TID/PPID, UID/GID, cgroup ID, comm
+- **Timestamps**: Nanosecond precision for latency tracking
+- **Arguments**: Full function args via PT_REGS or BTF
+- **Statistics**: Per-entity counters, success/error rates
+- **Dual output**: Ringbuf (user-space) + bpf_printk (kernel debug)
+
+### Output Modes
+1. **User-Space (Ringbuf)**: Rich structured events for monitoring stacks
+2. **Kernel-Side (bpf_printk)**: Debug logs via `trace_pipe`
+   ```bash
+   sudo cat /sys/kernel/debug/tracing/trace_pipe
+   ```
+
+### Example: S2 Kprobe Output
+```
+=== Kprobe Event ===
+  Timestamp:  12345678.123456789
+  Function:   __x64_sys_execve
+  PID:        1234
+  TID:        1234
+  Comm:       bash
+  UID:        1000
+  GID:        1000
+  Cgroup ID:  4567890123456
+  Arg0:       0x7fff12345678
+  Call Count: 42
+```
 
 ## Quick Start Examples
 - `S1-basic/examples/tracing/kprobe`: Per-PID execve counter. Use `build.sh` to generate BPF object + skeleton.
@@ -84,6 +143,8 @@ monsa-ebpf/
 ./build_examples.sh
 ```
 
+`build_examples.sh` builds both `S1-basic/examples` and `S2-advanced/examples` when present.
+
 ### Example: kprobe quick run
 ```bash
 cd S1-basic/examples/tracing/kprobe
@@ -94,7 +155,7 @@ sudo bpftool prog load build/example_kprobe.bpf.o /sys/fs/bpf/example_kprobe
 sudo bpftool net attach kprobe id $(sudo bpftool prog show pinned /sys/fs/bpf/example_kprobe | awk '/id/ {print $2}') func __x64_sys_execve
 
 # Check counters after execve events
-cd S1-basic/examples/tracing/kprobe
+sudo bpftool map dump pinned /sys/fs/bpf/example_kprobe --name exec_counts
 
 # Cleanup
 sudo rm /sys/fs/bpf/example_kprobe
@@ -102,7 +163,7 @@ sudo rm /sys/fs/bpf/example_kprobe
 
 ## BVT (Build Verification Test)
 
-`bvt_examples.sh` automatically builds and verifies all examples.
+`bvt_examples.sh` automatically builds and verifies all examples. Set `EXAMPLES_DIR` to target `S2-advanced/examples`.
 
 ```bash
 # Build and run all tests
@@ -113,6 +174,9 @@ SKIP_BUILD=1 ./bvt_examples.sh
 
 # Specify network interface for network tests
 TEST_IFACE=eth0 ./bvt_examples.sh
+
+# Target S2-advanced examples instead of S1-basic
+EXAMPLES_DIR=./S2-advanced/examples ./bvt_examples.sh
 
 # Specify cgroup path for cgroup tests
 TEST_CG_PATH=/sys/fs/cgroup/test ./bvt_examples.sh
@@ -133,6 +197,7 @@ TEST_UPROBE_BIN=/bin/bash TEST_UPROBE_SYMBOL=readline ./bvt_examples.sh
 | `TEST_UPROBE_SYMBOL` | Symbol name for uprobe | `TEST_UPROBE_SYMBOL=readline` |
 | `TEST_URETPROBE_BIN` | Binary path for uretprobe | `TEST_URETPROBE_BIN=/bin/bash` |
 | `TEST_URETPROBE_SYMBOL` | Symbol name for uretprobe | `TEST_URETPROBE_SYMBOL=readline` |
+| `EXAMPLES_DIR` | Override examples root (S1-basic or S2-advanced) | `EXAMPLES_DIR=./S2-advanced/examples` |
 
 ### Adding New Examples to BVT
 
